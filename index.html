@@ -146,7 +146,8 @@ section.log h2{font-size:1.1rem;margin:26px 0 8px}
 <div class="toast" id="toast" role="status"></div>
 
 <script>
-const SVC = 0xfff0, NOTIFY = 0xfff2;
+const SVC_UUID = '0000fff0-0000-1000-8000-00805f9b34fb', NOTIFY_UUID = '0000fff2-0000-1000-8000-00805f9b34fb';
+const BAT_UUID = '0000180f-0000-1000-8000-00805f9b34fb', BATLVL_UUID = '00002a19-0000-1000-8000-00805f9b34fb';
 const $ = id => document.getElementById(id);
 const types = new Map();
 let log = [], baseline = null, device = null, simTimer = null;
@@ -265,14 +266,23 @@ async function connect(){
     return;
   }
   notice('');
-  try{
-    device = await navigator.bluetooth.requestDevice({
-      filters:[{namePrefix:'G2'},{services:[SVC]}],
-      optionalServices:[SVC,'battery_service']
-    });
-  }catch(e){
-    if(e.name==='NotFoundError') return;
-    notice('Bluetooth bloqueado aqui (' + e.message + '). Abra a página direto no Bluefy ou hospede o arquivo, por exemplo no GitHub Pages.');
+  const errText = e => (e && (e.message || e.name)) || String(e);
+  const optional = [SVC_UUID, BAT_UUID];
+  const attempts = [
+    { filters:[{namePrefix:'G2'}], optionalServices: optional },
+    { acceptAllDevices:true, optionalServices: optional },
+  ];
+  let lastErr = null;
+  device = null;
+  for(const opts of attempts){
+    try{ device = await navigator.bluetooth.requestDevice(opts); break; }
+    catch(e){
+      lastErr = e;
+      if(e && e.name==='NotFoundError' && /cancel/i.test(e.message||'')) return;
+    }
+  }
+  if(!device){
+    notice('Não consegui abrir a lista de Bluetooth. Erro: ' + errText(lastErr) + '. Confira em Ajustes do iPhone > Bluefy se o Bluetooth está permitido.');
     return;
   }
   stopSim();
@@ -280,14 +290,14 @@ async function connect(){
   try{
     setStatus('Conectando…');
     const server = await device.gatt.connect();
-    const ch = await (await server.getPrimaryService(SVC)).getCharacteristic(NOTIFY);
+    const ch = await (await server.getPrimaryService(SVC_UUID)).getCharacteristic(NOTIFY_UUID);
     ch.addEventListener('characteristicvaluechanged', e=>{
       const v = e.target.value; onPacket(new Uint8Array(v.buffer, v.byteOffset, v.byteLength).slice());
     });
     await ch.startNotifications();
     setStatus('Conectada', 'on'); updateButtons(true);
     try{
-      const bat = await (await server.getPrimaryService('battery_service')).getCharacteristic('battery_level');
+      const bat = await (await server.getPrimaryService(BAT_UUID)).getCharacteristic(BATLVL_UUID);
       const show = v => { $('battery').hidden=false; $('battery').textContent = 'Bateria pelo serviço padrão: ' + v + ' %'; };
       show((await bat.readValue()).getUint8(0));
       bat.addEventListener('characteristicvaluechanged', e=>show(e.target.value.getUint8(0)));
@@ -295,7 +305,7 @@ async function connect(){
     }catch{}
   }catch(e){
     setStatus('Desconectada'); updateButtons(false);
-    notice('Falha ao conectar: ' + e.message + '. Feche o nRF Connect (a scooter só aceita uma conexão) e tente de novo.');
+    notice('Falha ao conectar: ' + ((e && (e.message||e.name)) || String(e)) + '. Feche o nRF Connect (a scooter só aceita uma conexão) e tente de novo.');
   }
 }
 
