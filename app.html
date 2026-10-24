@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14181c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>G2 Painel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef0f2; --ink:#15191d; --muted:#5d6670; --line:#cfd5db; --surface:#ffffff;
+  --signal:#b07a00; --signal-soft:#fff1c7; --ok:#1d8355; --warn:#b3261e; --btn:#15191d; --btn-ink:#fff;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#14181c; --ink:#eef1f3; --muted:#8c97a2; --line:#2a3138; --surface:#1b2026;
+    --signal:#ffc93c; --signal-soft:#3d3110; --ok:#4cc38a; --warn:#ff7b72; --btn:#eef1f3; --btn-ink:#14181c;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14181c; --ink:#eef1f3; --muted:#8c97a2; --line:#2a3138; --surface:#1b2026;
+  --signal:#ffc93c; --signal-soft:#3d3110; --ok:#4cc38a; --warn:#ff7b72; --btn:#eef1f3; --btn-ink:#14181c;
+  color-scheme:dark;
+}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Barlow",system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+.num{font-family:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+main{max-width:560px;margin:0 auto;padding:12px 18px 40px}
+
+.top{display:flex;align-items:center;gap:10px;min-height:48px}
+.status{display:flex;align-items:center;gap:8px;flex:1;color:var(--muted);font-weight:500}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--muted)}
+.dot.on{background:var(--ok)} .dot.busy{background:var(--signal)}
+button{font:inherit;font-weight:600;border:0;border-radius:12px;padding:11px 16px;background:var(--btn);color:var(--btn-ink);cursor:pointer}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:focus-visible{outline:3px solid var(--signal);outline-offset:2px}
+
+.notice{border-left:4px solid var(--warn);background:var(--surface);padding:10px 12px;border-radius:8px;margin:8px 0}
+.notice[hidden]{display:none}
+
+/* Velocímetro */
+.cockpit{text-align:center;padding:10px 0 4px}
+.mode{display:inline-block;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:1.15rem;letter-spacing:.08em;padding:3px 14px;border-radius:999px;border:2px solid var(--line);color:var(--muted);min-width:96px}
+.mode.Eco{border-color:var(--ok);color:var(--ok)}
+.mode.Sport{border-color:var(--signal);color:var(--signal)}
+.mode.Race{border-color:var(--warn);color:var(--warn)}
+.speed{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:min(46vw,250px);line-height:.92;letter-spacing:-.02em;margin-top:6px;transition:color .3s}
+.speed.moving{color:var(--signal)}
+.unit{color:var(--muted);font-weight:500;margin-top:-4px}
+
+/* Faixa de leituras */
+.readings{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:18px}
+.readings > div{padding:12px 4px}
+.readings > div + div{border-left:1px solid var(--line);padding-left:16px}
+.label{color:var(--muted);font-size:.85rem}
+.big{font-size:2rem;font-weight:600;line-height:1.1}
+.small{color:var(--muted);font-size:.9rem}
+.bar{height:6px;border-radius:3px;background:var(--line);margin-top:6px;overflow:hidden}
+.bar span{display:block;height:100%;width:0;background:var(--ok);transition:width .6s}
+.bar span.low{background:var(--warn)}
+
+/* Volta */
+h2{font-size:1.05rem;margin:26px 0 8px;display:flex;align-items:center;justify-content:space-between}
+.trip{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.trip .big{font-size:1.5rem}
+.history{list-style:none;margin:0;padding:0}
+.history li{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.history li span:last-child{color:var(--muted);text-align:right}
+.empty{color:var(--muted);font-size:.95rem}
+
+details{margin-top:26px;color:var(--muted)}
+summary{cursor:pointer;font-weight:600}
+pre{font-family:ui-monospace,Menlo,monospace;font-size:.75rem;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto;white-space:pre}
+.foot{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+@media (prefers-reduced-motion:reduce){.speed,.bar span{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div class="status"><span class="dot" id="dot"></span><span id="statusText">Desconectada</span></div>
+    <button id="connectBtn">Conectar</button>
+  </div>
+  <div class="notice" id="notice" hidden></div>
+
+  <section class="cockpit" aria-live="off">
+    <div class="mode" id="mode">—</div>
+    <div class="speed num" id="speed">0</div>
+    <div class="unit">km/h</div>
+  </section>
+
+  <section class="readings">
+    <div>
+      <div class="label">Bateria (estimada)</div>
+      <div class="big num" id="batt">—</div>
+      <div class="small num" id="volt">— V</div>
+      <div class="bar"><span id="battBar"></span></div>
+    </div>
+    <div>
+      <div class="label">Motor</div>
+      <div class="big" id="motor">—</div>
+      <div class="small num" id="rpm">— rpm</div>
+    </div>
+  </section>
+
+  <h2>Volta atual <button class="ghost" id="endTrip">Encerrar volta</button></h2>
+  <div class="trip">
+    <div><div class="label">Distância</div><div class="big num" id="tDist">0,00</div><div class="small">km</div></div>
+    <div><div class="label">Rodando</div><div class="big num" id="tTime">0:00</div><div class="small">min</div></div>
+    <div><div class="label">Máxima</div><div class="big num" id="tMax">0</div><div class="small">km/h</div></div>
+    <div><div class="label">Média</div><div class="big num" id="tAvg">0</div><div class="small">km/h</div></div>
+  </div>
+
+  <h2>Voltas anteriores</h2>
+  <ul class="history" id="history"></ul>
+
+  <details>
+    <summary>Dados brutos</summary>
+    <pre id="raw">Nenhum pacote ainda.</pre>
+  </details>
+
+  <div class="foot">
+    <button class="ghost" id="demoBtn">Ver demonstração</button>
+    <button class="ghost" id="clearHist">Apagar histórico</button>
+  </div>
+</main>
+
+<script>
+// Protocolo da Kukirin G2 (somente leitura, nada é enviado à scooter)
+const SVC_UUID    = '0000fff0-0000-1000-8000-00805f9b34fb';
+const NOTIFY_UUID = '0000fff2-0000-1000-8000-00805f9b34fb';
+const MODES = {0x0F:'Eco', 0x14:'Sport', 0x19:'Race'};
+const CELLS = 13; // bateria de 48 V = 13 células em série
+
+const $ = id => document.getElementById(id);
+const state = { speed:0, rpm:0, volt:null, voltIdle:[], motor:false, mode:null, lastA:null, rawA:'', rawB:'' };
+let device = null, reconnecting = false, demoTimer = null, wakeLock = null;
+
+// ---------- Volta (persistida no aparelho) ----------
+const loadJSON = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } };
+const saveJSON = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+let trip = loadJSON('g2.trip', newTrip());
+let history = loadJSON('g2.history', []);
+function newTrip(){ return { start: Date.now(), dist:0, moving:0, max:0 }; }
+
+function updateTrip(speed, dt){
+  if(dt <= 0 || dt > 2) return;
+  if(speed > 0){ trip.dist += speed * dt / 3600; trip.moving += dt; }
+  if(speed > trip.max) trip.max = speed;
+}
+function endTrip(){
+  if(trip.dist >= 0.01 || trip.moving >= 10){
+    history.unshift({ ...trip, end: Date.now() });
+    history = history.slice(0, 30);
+    saveJSON('g2.history', history);
+  }
+  trip = newTrip(); saveJSON('g2.trip', trip);
+  renderTrip(); renderHistory();
+}
+
+// ---------- Bateria: tensão por célula → % (curva típica de Li-ion em repouso) ----------
+const CURVE = [[3.00,0],[3.30,2],[3.40,5],[3.50,10],[3.60,20],[3.70,35],[3.80,50],[3.90,65],[4.00,80],[4.10,90],[4.20,100]];
+function battPercent(v){
+  const c = v / CELLS;
+  if(c <= CURVE[0][0]) return 0;
+  for(let i=1;i<CURVE.length;i++){
+    const [v1,p1] = CURVE[i-1], [v2,p2] = CURVE[i];
+    if(c <= v2) return Math.round(p1 + (p2-p1)*(c-v1)/(v2-v1));
+  }
+  return 100;
+}
+
+// ---------- Decodificação ----------
+function onPacket(b){
+  if(b.length < 20) return;
+  if(b[0]===0x27 && b[1]===0x22){
+    const now = performance.now();
+    const speed = b[12];
+    state.speed = speed;
+    state.rpm = b[10] | (b[11]<<8);
+    state.volt = (b[4] | (b[5]<<8)) / 100;
+    state.motor = (b[18] & 0x02) !== 0;
+    if(!state.motor && speed === 0){            // só conta tensão em repouso (sem queda de carga)
+      state.voltIdle.push(state.volt);
+      if(state.voltIdle.length > 20) state.voltIdle.shift();
+    }
+    if(state.lastA !== null) updateTrip(speed, (now - state.lastA)/1000);
+    state.lastA = now;
+    state.rawA = hex(b);
+    saveTripThrottled();
+  } else if(b[0]===0xF2 && b[1]===0xB0){
+    state.mode = MODES[b[3]] || null;
+    state.rawB = hex(b);
+  } else return;
+  render();
+}
+const hex = b => Array.from(b, x => x.toString(16).toUpperCase().padStart(2,'0')).join(' ');
+let lastSave = 0;
+function saveTripThrottled(){ const t = Date.now(); if(t - lastSave > 3000){ saveJSON('g2.trip', trip); lastSave = t; } }
+
+// ---------- Tela ----------
+const fmt1 = n => n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+function render(){
+  const sp = $('speed');
+  sp.textContent = state.speed;
+  sp.classList.toggle('moving', state.speed > 0);
+
+  const m = $('mode');
+  m.textContent = state.mode || '—';
+  m.className = 'mode ' + (state.mode || '');
+
+  if(state.volt !== null){
+    $('volt').textContent = state.volt.toFixed(2).replace('.', ',') + ' V';
+    const ref = state.voltIdle.length ? state.voltIdle.reduce((a,c)=>a+c,0)/state.voltIdle.length : state.volt;
+    const p = battPercent(ref);
+    $('batt').textContent = p + '%';
+    const bar = $('battBar'); bar.style.width = p + '%'; bar.classList.toggle('low', p <= 15);
+  }
+  $('motor').textContent = state.motor ? 'Ativo' : 'Parado';
+  $('rpm').textContent = state.rpm + ' rpm';
+  $('raw').textContent = (state.rawA || '—') + '\n' + (state.rawB || '—');
+  renderTrip();
+}
+function renderTrip(){
+  $('tDist').textContent = fmt1(trip.dist);
+  const s = Math.round(trip.moving);
+  $('tTime').textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+  $('tMax').textContent = trip.max;
+  $('tAvg').textContent = trip.moving > 0 ? Math.round(trip.dist / (trip.moving/3600)) : 0;
+}
+function renderHistory(){
+  const ul = $('history'); ul.innerHTML = '';
+  if(!history.length){ ul.innerHTML = '<li class="empty">Nenhuma volta salva ainda.</li>'; return; }
+  for(const h of history){
+    const li = document.createElement('li');
+    const d = new Date(h.start);
+    const when = d.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'}) + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+    const a = document.createElement('span'); a.textContent = when;
+    const b = document.createElement('span'); b.textContent = `${fmt1(h.dist)} km · ${Math.round(h.moving/60)} min · máx ${h.max} km/h`;
+    li.append(a, b); ul.appendChild(li);
+  }
+}
+
+// ---------- Bluetooth ----------
+function setStatus(text, cls){ $('statusText').textContent = text; $('dot').className = 'dot' + (cls ? ' ' + cls : ''); }
+function notice(msg){ const n = $('notice'); n.hidden = !msg; n.textContent = msg || ''; }
+const errText = e => (e && (e.message || e.name)) || String(e);
+
+async function connect(){
+  if(device && device.gatt.connected){ reconnecting = false; device.gatt.disconnect(); return; }
+  if(!navigator.bluetooth){ notice('Este navegador não tem Bluetooth para páginas web. No iPhone, abra esta página no app Bluefy.'); return; }
+  notice('');
+  stopDemo();
+  const attempts = [
+    { filters:[{namePrefix:'G2'}], optionalServices:[SVC_UUID] },
+    { acceptAllDevices:true, optionalServices:[SVC_UUID] },
+  ];
+  let lastErr = null; device = null;
+  for(const opts of attempts){
+    try{ device = await navigator.bluetooth.requestDevice(opts); break; }
+    catch(e){ lastErr = e; if(e && /cancel/i.test(e.message || '')) return; }
+  }
+  if(!device){ notice('Não consegui abrir a lista de Bluetooth. Erro: ' + errText(lastErr)); return; }
+  device.addEventListener('gattserverdisconnected', onDisconnected);
+  reconnecting = true;
+  await openLink();
+}
+
+async function openLink(){
+  try{
+    setStatus('Conectando…', 'busy');
+    const server = await device.gatt.connect();
+    const ch = await (await server.getPrimaryService(SVC_UUID)).getCharacteristic(NOTIFY_UUID);
+    ch.addEventListener('characteristicvaluechanged', e => {
+      const v = e.target.value; onPacket(new Uint8Array(v.buffer, v.byteOffset, v.byteLength));
+    });
+    await ch.startNotifications();
+    setStatus('Conectada', 'on');
+    $('connectBtn').textContent = 'Desconectar';
+    keepAwake();
+  }catch(e){
+    setStatus('Desconectada');
+    notice('Falha ao conectar: ' + errText(e) + '. Feche o nRF Connect e tente de novo.');
+  }
+}
+
+async function onDisconnected(){
+  state.lastA = null;
+  $('connectBtn').textContent = 'Conectar';
+  saveJSON('g2.trip', trip);
+  if(!reconnecting){ setStatus('Desconectada'); return; }
+  for(let i=1; i<=5 && reconnecting; i++){       // tenta reconectar sozinho
+    setStatus('Sinal perdido, reconectando (' + i + '/5)…', 'busy');
+    await new Promise(r => setTimeout(r, 1500 * i));
+    try{ await openLink(); if(device.gatt.connected) return; }catch{}
+  }
+  setStatus('Desconectada');
+}
+
+async function keepAwake(){
+  try{ if('wakeLock' in navigator && !wakeLock){ wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => wakeLock = null); } }catch{}
+}
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && device && device.gatt.connected) keepAwake(); });
+
+// ---------- Demonstração (sem scooter) ----------
+function startDemo(){
+  let t = 0, v = 4720;
+  setStatus('Demonstração', 'busy'); $('demoBtn').textContent = 'Parar demonstração';
+  demoTimer = setInterval(() => {
+    t++;
+    const sp = Math.max(0, Math.round(22 * Math.sin(t/25) + 4));
+    const rpm = Math.round(sp * 21.3);
+    const motor = sp > 0 ? 0x42 : 0x40;
+    const vv = sp > 0 ? v - 25 : v;
+    if(t % 40 === 0) v -= 1;
+    if(t % 2){
+      onPacket(Uint8Array.from([0x27,0x22,0x82,0x17, vv&255, vv>>8, sp?80:0,0, 0,0, rpm&255, rpm>>8, sp,0, 0xEC,0x1B, 0x19,0, motor,0]));
+    } else {
+      const mode = [0x0F,0x14,0x19][Math.floor(t/60) % 3];
+      onPacket(Uint8Array.from([0xF2,0xB0,0x11,mode,0x50,0,0,0xE3,0x12,0x79,0x0C,0,0x19,rpm&255,rpm>>8,0,0,motor,0,0]));
+    }
+  }, 290);
+}
+function stopDemo(){ if(demoTimer){ clearInterval(demoTimer); demoTimer = null; $('demoBtn').textContent = 'Ver demonstração'; setStatus('Desconectada'); } }
+
+// ---------- Botões ----------
+$('connectBtn').onclick = connect;
+$('endTrip').onclick = () => { if(confirm('Encerrar a volta atual e salvar no histórico?')) endTrip(); };
+$('clearHist').onclick = () => { if(confirm('Apagar todas as voltas salvas?')){ history = []; saveJSON('g2.history', history); renderHistory(); } };
+$('demoBtn').onclick = () => demoTimer ? stopDemo() : startDemo();
+window.addEventListener('pagehide', () => saveJSON('g2.trip', trip));
+
+renderTrip(); renderHistory();
+if(!navigator.bluetooth) notice('Este navegador não tem Bluetooth para páginas web. No iPhone, abra no app Bluefy. A demonstração funciona em qualquer navegador.');
+</script>
+</body>
+</html>
