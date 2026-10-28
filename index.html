@@ -161,16 +161,25 @@ function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('sho
 function notice(msg){ const n=$('notice'); if(!msg){n.hidden=true;return;} n.textContent=msg; n.hidden=false; }
 function setStatus(text, cls){ $('statusText').textContent=text; $('dot').className='dot'+(cls?' '+cls:''); }
 
-// Palpites de decodificação por tipo de pacote
+// Decodificação por tipo de pacote (ver README): [rótulo, valor, confirmado?]
+const MODES = {0x0F:'Eco', 0x14:'Sport', 0x19:'Race'};
+const u16 = (b, i) => b[i] | (b[i+1]<<8);
+const motorOn = (b, i) => (b[i] & 0x02) ? 'ativo' : 'parado';
 const HINTS = {
   'F2 B0': b => [
-    b.length>3 && ['Limite do modo', b[3] + ' km/h'],
-    b.length>9 && ['Tensão', (((b[8]<<8)|b[9])/100).toFixed(2) + ' V'],
-    b.length>12 && ['Temperatura?', b[12] + ' °C'],
+    b.length>3  && ['Modo, byte 3', MODES[b[3]] || 'código ' + hex(b[3]), true],
+    b.length>14 && ['Rotação, bytes 13–14', u16(b,13) + ' rpm', true],
+    b.length>17 && ['Motor, bit 1 do byte 17', motorOn(b,17), true],
+    b.length>9  && ['Tensão?, bytes 8–9 big-endian', (((b[8]<<8)|b[9])/100).toFixed(2) + ' V'],
+    b.length>12 && ['Temperatura?, byte 12', b[12] + ' °C'],
   ],
   '27 22': b => [
-    b.length>5 && ['Tensão', (((b[5]<<8)|b[4])/100).toFixed(2) + ' V'],
-    b.length>16 && ['Temperatura?', b[16] + ' °C'],
+    b.length>12 && ['Velocidade, byte 12', b[12] + ' km/h', true],
+    b.length>5  && ['Tensão, bytes 4–5', (u16(b,4)/100).toFixed(2) + ' V', true],
+    b.length>11 && ['Rotação, bytes 10–11', u16(b,10) + ' rpm', true],
+    b.length>18 && ['Motor, bit 1 do byte 18', motorOn(b,18), true],
+    b.length>7  && ['Corrente/potência?, bytes 6–7', String(u16(b,6))],
+    b.length>16 && ['Temperatura?, byte 16', b[16] + ' °C'],
   ],
 };
 
@@ -216,8 +225,8 @@ function renderCard(t, now){
   }
   const hintFn = HINTS[t.key], ul = t.el.querySelector('.hints');
   ul.innerHTML = '';
-  if(hintFn) hintFn(b).filter(Boolean).forEach(([label,val])=>{
-    const li=document.createElement('li'); li.innerHTML='<b></b> '; li.querySelector('b').textContent=val; li.append(`(${label}, palpite)`); ul.appendChild(li);
+  if(hintFn) hintFn(b).filter(Boolean).forEach(([label,val,ok])=>{
+    const li=document.createElement('li'); li.innerHTML='<b></b> '; li.querySelector('b').textContent=val; li.append(ok ? `(${label})` : `(${label}, palpite)`); ul.appendChild(li);
   });
 }
 
